@@ -3,65 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#0d0f1a">
-  <meta name="description" content="Tetris in your browser, with hold, ghost piece and touch controls.">
-  <title>Tetris</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'><path fill='%23b061ff' d='M10 0h10v10h10v10H0V10h10z'/></svg>">
-  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#0a0314">
+  <meta name="description" content="Tetris, narrated by your last brain cell. Farm aura. Survive Ohio.">
+  <title>Brainrot Tetris</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'><path fill='%23ff1fa8' d='M10 0h10v10h10v10H0V10h10z'/></svg>">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <main class="game">
-    <aside class="side">
-      <section class="panel">
-        <h2>Hold</h2>
-        <canvas id="hold" width="160" height="120" role="img" aria-label="Held piece"></canvas>
-      </section>
-      <section class="panel stats" aria-live="off">
-        <div><h2>Score</h2><output id="score">0</output></div>
-        <div><h2>Best</h2><output id="best">0</output></div>
-        <div><h2>Level</h2><output id="level">1</output></div>
-        <div><h2>Lines</h2><output id="lines">0</output></div>
-      </section>
-    </aside>
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div id="flash" aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+  <div id="floats" aria-hidden="true"></div>
 
-    <div class="well">
-      <canvas id="board" width="600" height="1200" role="img" aria-label="Tetris board"></canvas>
-      <div id="overlay" class="overlay">
-        <h1 id="overlay-title">Tetris</h1>
-        <p id="overlay-text"></p>
-        <button id="overlay-button" type="button">Play</button>
+  <div id="app">
+    <header class="narrator">
+      <svg id="cell" data-mood="ok" viewBox="0 0 64 64" role="img" aria-label="Your last brain cell">
+        <path class="cell-body" d="M32 6c7-4 15 0 16 7 7 1 11 8 8 15 4 6 1 14-6 16-1 8-10 12-18 8-8 4-17 0-18-8-7-2-10-10-6-16-3-7 1-14 8-15 1-7 9-11 16-7z"/>
+        <path class="cell-fold" d="M20 18c4 3 4 7 1 10M44 18c-4 3-4 7-1 10"/>
+        <g class="eyes"><circle cx="24" cy="34" r="6"/><circle cx="40" cy="34" r="6"/><circle class="pupil" cx="25" cy="35" r="2.6"/><circle class="pupil" cx="41" cy="35" r="2.6"/></g>
+        <g class="eyes-dead"><path d="M19 29l10 10M29 29l-10 10M35 29l10 10M45 29l-10 10"/></g>
+        <path class="m m-ok" d="M26 47h12"/>
+        <path class="m m-happy" d="M23 44c4 7 14 7 18 0z"/>
+        <path class="m m-panic" d="M27 50c0-8 10-8 10 0z"/>
+        <path class="m m-dead" d="M24 49c4-4 12-4 16 0"/>
+      </svg>
+      <p id="say" aria-live="polite">Your last brain cell is warming up.</p>
+      <span id="viewers">👁 4 watching</span>
+      <div id="banner" hidden></div>
+    </header>
+
+    <main class="game" id="game">
+      <aside class="side">
+        <section class="panel">
+          <h2>Hold</h2>
+          <canvas id="hold" width="160" height="120" role="img" aria-label="Held piece"></canvas>
+          <p class="piece-name" id="hold-name">&nbsp;</p>
+        </section>
+        <section class="panel stats">
+          <div class="aura-box"><h2>Aura</h2><output id="score">0</output><span id="tax-chip" hidden></span></div>
+          <div><h2>Peak aura</h2><output id="best">0</output></div>
+          <div><h2>Brainrot lvl</h2><output id="level">1</output></div>
+          <div><h2>Lines</h2><output id="lines">0</output></div>
+        </section>
+      </aside>
+
+      <div class="well" id="well">
+        <canvas id="board" width="600" height="1200" role="img" aria-label="Tetris board"></canvas>
       </div>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>Next victim</h2>
+          <canvas id="next" width="160" height="480" role="img" aria-label="Upcoming pieces"></canvas>
+          <p class="piece-name" id="next-name">&nbsp;</p>
+        </section>
+        <button id="pause" class="small" type="button">Pause</button>
+        <button id="mute" class="small" type="button" aria-pressed="false">🔊 Sound</button>
+      </aside>
+
+      <aside class="chat" aria-label="Fake live chat">
+        <h2>Live chat <span class="live">● LIVE</span></h2>
+        <ol id="chat"></ol>
+      </aside>
+    </main>
+
+    <dl class="keys">
+      <div><dt>← →</dt><dd>Move</dd></div>
+      <div><dt>↓</dt><dd>Soft drop</dd></div>
+      <div><dt>Space</dt><dd>Hard drop</dd></div>
+      <div><dt>↑ / X</dt><dd>Rotate right</dd></div>
+      <div><dt>Z</dt><dd>Rotate left</dd></div>
+      <div><dt>C / Shift</dt><dd>Hold</dd></div>
+      <div><dt>P / Esc</dt><dd>Pause</dd></div>
+      <div><dt>M</dt><dd>Mute</dd></div>
+    </dl>
+
+    <div class="touch" aria-label="Touch controls">
+      <button type="button" data-action="hold">Hold</button>
+      <button type="button" data-action="ccw" aria-label="Rotate left">⟲</button>
+      <button type="button" data-action="cw" aria-label="Rotate right">⟳</button>
+      <button type="button" data-action="hard">Drop</button>
+      <button type="button" data-action="left" aria-label="Move left">←</button>
+      <button type="button" data-action="down" aria-label="Soft drop">↓</button>
+      <button type="button" data-action="right" aria-label="Move right">→</button>
     </div>
-
-    <aside class="side">
-      <section class="panel">
-        <h2>Next</h2>
-        <canvas id="next" width="160" height="480" role="img" aria-label="Upcoming pieces"></canvas>
-      </section>
-      <button id="pause" class="pause" type="button">Pause</button>
-    </aside>
-  </main>
-
-  <dl class="keys">
-    <div><dt>← →</dt><dd>Move</dd></div>
-    <div><dt>↓</dt><dd>Soft drop</dd></div>
-    <div><dt>Space</dt><dd>Hard drop</dd></div>
-    <div><dt>↑ / X</dt><dd>Rotate right</dd></div>
-    <div><dt>Z</dt><dd>Rotate left</dd></div>
-    <div><dt>C / Shift</dt><dd>Hold</dd></div>
-    <div><dt>P / Esc</dt><dd>Pause</dd></div>
-  </dl>
-
-  <div class="touch" aria-label="Touch controls">
-    <button type="button" data-action="hold">Hold</button>
-    <button type="button" data-action="ccw" aria-label="Rotate left">⟲</button>
-    <button type="button" data-action="cw" aria-label="Rotate right">⟳</button>
-    <button type="button" data-action="hard">Drop</button>
-    <button type="button" data-action="left" aria-label="Move left">←</button>
-    <button type="button" data-action="down" aria-label="Soft drop">↓</button>
-    <button type="button" data-action="right" aria-label="Move right">→</button>
   </div>
 
-  <script src="game.js"></script>
+  <div id="overlay" class="overlay">
+    <div class="card">
+      <section id="view-menu">
+        <h1 class="title"><span>Brainrot</span> <span>Tetris</span></h1>
+        <p class="tagline">Narrated by your last brain cell. It is not optimistic.</p>
+        <button id="play" class="primary" type="button">Enter the chat</button>
+      </section>
+
+      <section id="view-pause" hidden>
+        <h1 class="title small-title">Bro paused</h1>
+        <p class="tagline" id="pause-line">Go touch grass. I'll wait.</p>
+        <div class="row">
+          <button id="resume" class="primary" type="button">Resume</button>
+          <button id="restart" type="button">Restart</button>
+          <button id="quit" type="button">Main menu</button>
+        </div>
+      </section>
+
+      <section id="view-over" hidden>
+        <h1 class="title small-title over-title">Your last brain cell has left the chat 💀</h1>
+        <p class="rank-label">Official ranking</p>
+        <p id="rank" class="rank"></p>
+        <dl id="report" class="report"></dl>
+        <p id="prognosis" class="tagline"></p>
+        <div class="row">
+          <button id="retry" class="primary" type="button">Retry</button>
+          <button id="share" type="button">Share score</button>
+          <button id="quit-over" type="button">Main menu</button>
+        </div>
+        <p id="share-status" class="share-status" role="status"></p>
+      </section>
+
+      <section id="settings" class="settings">
+        <fieldset class="modes">
+          <legend>Chaos mode</legend>
+          <label><input type="radio" name="mode" value="normal"><span><b>Normal Brainrot</b><small>Standard Tetris. Funny commentary. Mostly stable.</small></span></label>
+          <label><input type="radio" name="mode" value="online"><span><b>Terminally Online</b><small>More pop-ups, more chat, less grass.</small></span></label>
+          <label><input type="radio" name="mode" value="ohio"><span><b>Ohio Final Boss</b><small>Maximum absurdity. Fake warnings. Same fair rules.</small></span></label>
+        </fieldset>
+        <div class="controls">
+          <label class="volume">Volume <input id="volume" type="range" min="0" max="100" step="1"></label>
+          <label class="check"><input id="mute-check" type="checkbox"> Mute</label>
+          <label class="check"><input id="reduced" type="checkbox"> Reduced motion</label>
+        </div>
+      </section>
+
+      <section id="scores-box" class="scores">
+        <h2>Hall of aura</h2>
+        <ol id="scores"></ol>
+      </section>
+    </div>
+  </div>
+
+  <script src="audio.js?v=2"></script>
+  <script src="brainrot.js?v=2"></script>
+  <script src="game.js?v=2"></script>
 </body>
 </html>
